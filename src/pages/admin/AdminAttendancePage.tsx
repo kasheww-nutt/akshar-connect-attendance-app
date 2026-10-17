@@ -6,6 +6,7 @@ import { dataService } from '../../services/dataService';
 import { ClassEntity } from '../../types';
 import { AttendanceSession } from '../../components/attendance/AttendanceSession';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { TeacherLocationsPanel } from '../../components/attendance/TeacherLocationsPanel';
 
 export const AdminAttendancePage: React.FC = () => {
   const { user } = useAuth();
@@ -71,6 +72,8 @@ export const AdminAttendancePage: React.FC = () => {
         allowedClasses={classes}
         markedByName={user?.name || 'Administrator'}
       />
+
+      <TeacherLocationsPanel classes={classes} />
     </div>
   );
 };

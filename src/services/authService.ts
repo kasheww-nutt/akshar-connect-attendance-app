@@ -104,7 +104,7 @@ class AuthService {
           id: userId,
           name: email.split('@')[0],
           email,
-          role: email.startsWith('admin') ? 'ADMIN' : 'TEACHER'
+          role: 'TEACHER'
         };
         this.currentUser = user;
         localStorage.setItem(SESSION_KEY, JSON.stringify(user));
@@ -173,7 +173,7 @@ class AuthService {
             id: data.user.id,
             name: data.user.email?.split('@')[0] || 'User',
             email: data.user.email || normalizedEmail,
-            role: normalizedEmail.startsWith('admin') ? 'ADMIN' : 'TEACHER'
+            role: 'TEACHER'
           };
           this.currentUser = fallbackUser;
           localStorage.setItem(SESSION_KEY, JSON.stringify(fallbackUser));

@@ -7,6 +7,7 @@ import {
   DashboardStats,
   ClassAttendanceSummary,
   AttendanceSummary,
+  AttendanceLocation,
   User
 } from '../types';
 import { getFreshMockDatabase, MockDatabaseState } from '../data/mockDatabase';
@@ -14,6 +15,7 @@ import { authService } from './authService';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const STORAGE_KEY = 'akshar_connect_records_v5';
+const LOCATIONS_KEY = 'akshar_connect_locations_v1';
 
 export class AuthorizationError extends Error {
   constructor(message: string) {
@@ -1063,6 +1065,85 @@ class DataService {
     }
 
     return records.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  /**
+   * Records the teacher's location at the moment attendance is submitted.
+   * Teachers can only record for themselves and their assigned classes.
+   */
+  public async recordAttendanceLocation(
+    classId: string,
+    date: string,
+    fix: { latitude: number; longitude: number; accuracy: number }
+  ): Promise<void> {
+    const { user } = this.requireClassAccess(classId);
+    if (user.role !== 'TEACHER' || !user.teacherId) return;
+
+    const capturedAt = new Date().toISOString();
+
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('attendance_locations').insert({
+        teacher_id: user.teacherId,
+        class_id: classId,
+        date,
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy_m: fix.accuracy
+      });
+      if (error) throw new Error('Could not record your location. Attendance was not saved.');
+      return;
+    }
+
+    const list = this.loadLocalLocations();
+    list.push({
+      id: `loc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      teacherId: user.teacherId,
+      teacherName: user.name,
+      classId,
+      date,
+      latitude: fix.latitude,
+      longitude: fix.longitude,
+      accuracy: fix.accuracy,
+      capturedAt
+    });
+    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(list.slice(-500)));
+  }
+
+  /** Admin only: recent teacher locations captured during attendance. */
+  public async getAttendanceLocations(limit = 20): Promise<AttendanceLocation[]> {
+    this.requireAdmin();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('attendance_locations')
+        .select('*, teachers(name)')
+        .order('captured_at', { ascending: false })
+        .limit(limit);
+      if (error || !data) return [];
+      return data.map((r: any) => ({
+        id: r.id,
+        teacherId: r.teacher_id,
+        teacherName: r.teachers?.name ?? r.teacher_id,
+        classId: r.class_id,
+        date: r.date,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        accuracy: r.accuracy_m,
+        capturedAt: r.captured_at
+      }));
+    }
+
+    return this.loadLocalLocations()
+      .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))
+      .slice(0, limit);
+  }
+
+  private loadLocalLocations(): AttendanceLocation[] {
+    try {
+      return JSON.parse(localStorage.getItem(LOCATIONS_KEY) || '[]');
+    } catch {
+      return [];
+    }
   }
 
   /**

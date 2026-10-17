@@ -59,6 +59,18 @@ export interface AttendanceRecord {
   notes?: string;
 }
 
+export interface AttendanceLocation {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  classId: string;
+  date: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  capturedAt: string;
+}
+
 export interface AttendanceSessionItem {
   student: Student;
   status: AttendanceStatus;

@@ -17,6 +17,8 @@ import { useTranslation } from '../../i18n';
 import { useToast } from '../../hooks/useToast';
 import { getTodayDateString, formatDateDisplay } from '../../utils/dateUtils';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
+import { getCurrentLocation } from '../../utils/geolocation';
 
 interface AttendanceSessionProps {
   initialClassId?: string;
@@ -33,6 +35,8 @@ export const AttendanceSession: React.FC<AttendanceSessionProps> = ({
 }) => {
   const { t } = useTranslation();
   const toast = useToast();
+  const { user } = useAuth();
+  const isTeacher = user?.role === 'TEACHER';
 
   const [selectedClassId, setSelectedClassId] = useState<string>(
     initialClassId || (allowedClasses.length > 0 ? allowedClasses[0].id : '')
@@ -162,6 +166,8 @@ export const AttendanceSession: React.FC<AttendanceSessionProps> = ({
 
     setSaving(true);
     try {
+      const fix = isTeacher ? await getCurrentLocation() : null;
+
       const payload = students.map(s => ({
         studentId: s.id,
         status: statusMap[s.id] || 'present',
@@ -174,6 +180,10 @@ export const AttendanceSession: React.FC<AttendanceSessionProps> = ({
         payload,
         markedByName
       );
+
+      if (fix) {
+        await dataService.recordAttendanceLocation(selectedClassId, selectedDate, fix);
+      }
 
       setExistingRecordsFound(true);
       toast.success(t('attendance.savedSuccess'));
@@ -251,6 +261,15 @@ export const AttendanceSession: React.FC<AttendanceSessionProps> = ({
             </button>
           </div>
         </div>
+
+        {isTeacher && (
+          <div className="px-3 py-2 rounded-md bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center gap-2">
+            <Info className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+            <span>
+              Your device location is recorded once, when you save attendance, and is visible only to you and administrators. Please allow location access when prompted.
+            </span>
+          </div>
+        )}
 
         {/* Existing records status notice */}
         {existingRecordsFound && (
