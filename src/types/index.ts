@@ -12,6 +12,7 @@ export interface User {
   teacherId?: string; // links to Teacher if role is TEACHER
   avatar?: string;
   phone?: string;
+  isDemo?: boolean;
 }
 
 export interface Teacher {

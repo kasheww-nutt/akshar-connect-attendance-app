@@ -195,10 +195,11 @@ class AuthService {
       throw new Error('Invalid password. Please check your credentials and try again.');
     }
 
-    this.currentUser = account.user;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(account.user));
+    const demoUser: User = { ...account.user, isDemo: true };
+    this.currentUser = demoUser;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(demoUser));
     this.notify();
-    return account.user;
+    return demoUser;
   }
 
   public async logout(): Promise<void> {

@@ -64,6 +64,10 @@ class DataService {
     return fresh;
   }
 
+  private useRemote(): boolean {
+    return isSupabaseConfigured && !authService.getCurrentUser()?.isDemo;
+  }
+
   // ===================== AUTHORIZATION HELPERS =====================
 
   public getCurrentUserOrThrow(): User {
@@ -124,7 +128,7 @@ class DataService {
   public async getTeachers(): Promise<Teacher[]> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         const { data: rawTeachers, error } = await supabase
           .from('teachers')
@@ -162,7 +166,7 @@ class DataService {
       throw new AuthorizationError('Access denied: Educators may only view their own profile.');
     }
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         const { data: t, error } = await supabase
           .from('teachers')
@@ -199,7 +203,7 @@ class DataService {
   public async createTeacher(teacherInput: Omit<Teacher, 'id'>): Promise<Teacher> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { data: teacher, error } = await supabase
         .from('teachers')
         .insert({
@@ -267,7 +271,7 @@ class DataService {
   public async updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const teacherPayload: Record<string, any> = {};
       if (updates.name !== undefined) teacherPayload.name = updates.name;
       if (updates.email !== undefined) teacherPayload.email = updates.email;
@@ -340,7 +344,7 @@ class DataService {
   public async deleteTeacher(id: string): Promise<void> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { error } = await supabase.from('teachers').delete().eq('id', id);
       if (error) throw new Error(error.message);
       return;
@@ -371,7 +375,7 @@ class DataService {
   public async getClasses(): Promise<ClassEntity[]> {
     const user = this.getCurrentUserOrThrow();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         let query = supabase
           .from('classes')
@@ -436,7 +440,7 @@ class DataService {
   public async getClassById(id: string): Promise<ClassEntity | null> {
     const { isAdmin, user } = this.requireClassAccess(id);
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         const { data: c, error } = await supabase
           .from('classes')
@@ -490,7 +494,7 @@ class DataService {
   public async createClass(classInput: Omit<ClassEntity, 'id' | 'studentCount'>): Promise<ClassEntity> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { data: cls, error } = await supabase
         .from('classes')
         .insert({
@@ -550,7 +554,7 @@ class DataService {
   public async updateClass(id: string, updates: Partial<ClassEntity>): Promise<ClassEntity> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const classPayload: Record<string, any> = {};
       if (updates.name !== undefined) classPayload.name = updates.name;
       if (updates.grade !== undefined) classPayload.grade = updates.grade;
@@ -624,7 +628,7 @@ class DataService {
   public async deleteClass(id: string): Promise<void> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { error } = await supabase.from('classes').delete().eq('id', id);
       if (error) throw new Error(error.message);
       return;
@@ -651,7 +655,7 @@ class DataService {
   public async getStudents(filter?: { classId?: string; search?: string }): Promise<Student[]> {
     const user = this.getCurrentUserOrThrow();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         let query = supabase.from('students').select('*').order('roll_number');
 
@@ -763,7 +767,7 @@ class DataService {
   public async getStudentById(id: string): Promise<Student | null> {
     const user = this.getCurrentUserOrThrow();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         const { data: s, error } = await supabase
           .from('students')
@@ -832,7 +836,7 @@ class DataService {
   public async createStudent(studentInput: Omit<Student, 'id'>): Promise<Student> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { data: s, error } = await supabase
         .from('students')
         .insert({
@@ -881,7 +885,7 @@ class DataService {
   public async updateStudent(id: string, updates: Partial<Student>): Promise<Student> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const payload: Record<string, any> = {};
       if (updates.name !== undefined) payload.name = updates.name;
       if (updates.rollNumber !== undefined) payload.roll_number = updates.rollNumber;
@@ -937,7 +941,7 @@ class DataService {
   public async deleteStudent(id: string): Promise<void> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { error } = await supabase.from('students').delete().eq('id', id);
       if (error) throw new Error(error.message);
       return;
@@ -962,7 +966,7 @@ class DataService {
   }): Promise<AttendanceRecord[]> {
     const user = this.getCurrentUserOrThrow();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       try {
         let query = supabase.from('attendance_records').select('*').order('date', { ascending: false });
 
@@ -1081,7 +1085,7 @@ class DataService {
 
     const capturedAt = new Date().toISOString();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { error } = await supabase.from('attendance_locations').insert({
         teacher_id: user.teacherId,
         class_id: classId,
@@ -1113,7 +1117,7 @@ class DataService {
   public async getAttendanceLocations(limit = 20): Promise<AttendanceLocation[]> {
     this.requireAdmin();
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { data, error } = await supabase
         .from('attendance_locations')
         .select('*, teachers(name)')
@@ -1159,7 +1163,7 @@ class DataService {
   ): Promise<AttendanceRecord[]> {
     this.requireClassAccess(classId);
 
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const recordsToUpsert = records.map(r => ({
         student_id: r.studentId,
         class_id: classId,
@@ -1371,7 +1375,7 @@ class DataService {
   }
 
   public async canTeacherAccessClass(teacherId: string, classId: string): Promise<boolean> {
-    if (isSupabaseConfigured && supabase) {
+    if (this.useRemote() && supabase) {
       const { data } = await supabase
         .from('teacher_classes')
         .select('id')
